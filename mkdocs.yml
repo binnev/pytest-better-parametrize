@@ -6,5 +6,5 @@ theme: readthedocs
 
 repo_url: https://github.com/binnev/pytest-better-parametrize
 
-pages:
+nav:
 - Home: index.md
