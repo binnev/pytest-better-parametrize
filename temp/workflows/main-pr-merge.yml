@@ -1,0 +1,138 @@
+name: main-pr-merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump_version:
+    permissions: write-all
+    # if the last commit message is a version bump, don't run
+    # this action.
+    if: "!startsWith(github.event.head_commit.message, 'bump:')"
+    runs-on: ubuntu-latest
+    name: Bump version
+
+    steps:
+      - uses: actions/checkout@v4
+        # This is necessary for commitizen to see the previous commits,
+        # which is what it uses to calculate the version bump.
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install commitizen
+      - name: Get version before bump
+        id: version_before
+        run: |
+          echo version_before was $(cz version --project)
+          echo "version=$(cz version --project)" >> "$GITHUB_OUTPUT"
+      - name: Create bump and changelog
+        uses: commitizen-tools/commitizen-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get version after bump
+        id: version_after
+        run: |
+          echo version_after was $(cz version --project)
+          echo "version=$(cz version --project)" >> "$GITHUB_OUTPUT"
+      - name: Print Version
+        run: echo "Bumped from version
+          ${{ steps.version_before.outputs.version }} to
+          ${{ steps.version_after.outputs.version }}"
+
+    outputs:
+      version_before: ${{ steps.version_before.outputs.version }}
+      version_after: ${{ steps.version_after.outputs.version }}
+      # todo: calculate bump size (major/minor/patch) and output it
+
+  # docs should always be rebuilt; we might want to fix something in
+  # the docs for an existing version.
+  build_docs:
+    needs: bump_version
+    permissions: write-all
+    runs-on: ubuntu-latest
+    name: Build docs
+    steps:
+      - uses: actions/checkout@v4
+        with: # this fetches the gh-pages branch
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install mike mkdocs mkdocstrings[python]
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "noreply@github.com"
+      - name: Extract major / minor version
+        id: major_minor
+        run: |
+          regex="^([0-9]+)\.([0-9]+)\.([0-9]+)$"
+          version_string=${{ needs.bump_version.outputs.version_after }}
+          if [[ $version_string =~ $regex ]]; then
+              major="${BASH_REMATCH[1]}"
+              minor="${BASH_REMATCH[2]}"
+              echo "version=$major.$minor" >> "$GITHUB_OUTPUT"
+          else
+              echo "Invalid version string format"
+          fi
+      - name: Build and deploy docs
+        run: mike deploy ${{ steps.major_minor.outputs.version }} latest --push --update-aliases
+
+  test_pypi:
+    needs: bump_version
+    if: needs.bump_version.outputs.version_after != needs.bump_version.outputs.version_before
+    runs-on: ubuntu-latest
+    name: TestPyPI
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/pytest-better-parametrize
+    steps:
+      - uses: actions/checkout@v4
+      - run: git pull  # this is necessary to get the "bump" commit
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install build twine
+      - name: Build
+        run: python -m build
+      - name: Check build
+        run: twine check dist/*
+      - name: TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  pypi:
+    needs: test_pypi
+    runs-on: ubuntu-latest
+    name: PyPI
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pytest-better-parametrize
+    steps:
+      - uses: actions/checkout@v4
+      - run: git pull  # this is necessary to get the "bump" commit
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install build twine
+      - name: Build
+        run: python -m build
+      - name: Check build
+        run: twine check dist/*
+      - name: PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

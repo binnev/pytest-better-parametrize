@@ -1,0 +1,10 @@
+site_name: pytest-better-parametrize
+site_description: A wrapper around pytest.mark.parametrize that allows better description of test cases
+site_author: Robin Neville
+
+theme: readthedocs
+
+repo_url: https://github.com/binnev/pytest-better-parametrize
+
+pages:
+- Home: index.md
