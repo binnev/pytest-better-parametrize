@@ -44,6 +44,9 @@ dev = [
     "commitizen",
     "pre-commit",
     "pytest-cov",
+    "mkdocs",
+    "mkdocstrings[python]",
+    "mike",
 ]
 [project.urls]
 Repository = "https://github.com/binnev/pytest-better-parametrize"
