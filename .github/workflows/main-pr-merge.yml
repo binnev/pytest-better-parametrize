@@ -82,9 +82,9 @@ jobs:
               echo "Invalid version string format"
           fi
       - name: Build and deploy docs
-        run: mike deploy ${{ steps.major_minor.outputs.version }} latest --push --update-aliases
-      - name: Set default latest
-        run: mike set-default latest --push
+        run: |
+          mike deploy ${{ steps.major_minor.outputs.version }} latest --update-aliases
+          mike set-default latest --push
 
   test_pypi:
     needs: bump_version
