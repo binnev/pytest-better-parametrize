@@ -11,26 +11,20 @@ pytest-better-parametrize
     :alt: Python versions
 
 .. image:: https://github.com/binnev/pytest-better-parametrize/actions/workflows/main.yml/badge.svg
-    :target: https://github.com/binnev/pytest-better-parametrize/actions/workflows/main.yml
+    :target: https://github.com/binnev/pytest-better-parametrize/actions/workflows/main-pr-merge.yml
     :alt: See Build Status on GitHub Actions
 
-A wrapper around pytest.mark.parametrize that allows better description of test cases
+Better description of parametrized test cases.
 
 ----
 
 This `pytest`_ plugin was generated with `Cookiecutter`_ along with `@hackebrot`_'s `cookiecutter-pytest-plugin`_ template.
 
 
-Features
---------
+Documentation
+-------------
 
-* TODO
-
-
-Requirements
-------------
-
-* TODO
+Please see `the docs <https://binnev.github.io/pytest-better-parametrize>`_ for a detailed description of features and usage.
 
 
 Installation
@@ -41,10 +35,6 @@ You can install "pytest-better-parametrize" via `pip`_ from `PyPI`_::
     $ pip install pytest-better-parametrize
 
 
-Usage
------
-
-* TODO
 
 Contributing
 ------------
