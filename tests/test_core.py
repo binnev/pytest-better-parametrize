@@ -2,7 +2,7 @@ from collections import namedtuple
 
 import pytest
 
-from src.pytest_better_parametrize.core import better_parametrize
+from src.pytest_better_parametrize.core import better_parametrize, _prep_args
 
 
 def _grant_access(
@@ -446,3 +446,15 @@ def test_use_decorator_directly(
     assert isinstance(foo, str)
     assert isinstance(bar, int)
     assert isinstance(baz, list)
+
+
+def test__prep_args_checks_for_namedtuple():
+    with pytest.raises(ValueError) as e:
+        _prep_args(
+            tuple,  # has no `_fields` attr, so will fail
+            [],
+        )
+
+    assert (
+        str(e.value) == "`cls` must be a namedtuple with a `_fields` attribute"
+    )
