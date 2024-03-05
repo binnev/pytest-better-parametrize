@@ -13,9 +13,7 @@ def pytest_configure(config):
 
     in your pytest.ini file.
     """
-    config.addinivalue_line(
-        "markers", "better_parametrize"
-    )
+    config.addinivalue_line("markers", "better_parametrize")
 
 
 def pytest_generate_tests(metafunc) -> None:

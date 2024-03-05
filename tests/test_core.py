@@ -422,7 +422,7 @@ def test_long_descriptions__no_id(
             ),
         ),
     ],
-    ignore=["description"]
+    ignore=["description"],
 )
 def test_use_decorator_directly(
     foo: str,
