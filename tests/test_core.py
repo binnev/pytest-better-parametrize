@@ -186,7 +186,7 @@ def test_stacking__vanilla(
     ],
 )
 def test_stacking__better(
-    weekend: int,
+    weekend: bool,
     full_moon: bool,
 ):
     """
