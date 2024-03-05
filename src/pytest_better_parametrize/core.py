@@ -35,7 +35,7 @@ def _prep_args(
     testcases: t.Sequence[TestCase],
     ignore: t.Sequence[str] = (),
     **kwargs,
-) -> tuple[Fields, Params, Kwargs]:
+) -> t.Tuple[Fields, Params, Kwargs]:
     """
     Unpacks the params into pytest.params with positional arguments.
     """
