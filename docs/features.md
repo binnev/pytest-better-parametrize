@@ -1,12 +1,14 @@
-# Features 
-`pytest.mark.parametrize` is great. It's one of my favourite pytest features. It allows us to easily DRY up test code. However, it does have a few limitations. We'll walk through those limitations (and the solutions offered by `pytest-better-parametrize`) here.  
+# Features
 
-## Keyword arguments 
+`pytest.mark.parametrize` is great. It's one of my favourite pytest features. It allows us to easily DRY up test code. However, it does have a few limitations. We'll walk through those limitations (and the solutions offered by `pytest-better-parametrize`) here.
 
-It is not possible to pass keyword arguments to `pytest.param`. This can make tests difficult to read if they have many params and many fields. Consider the following example: 
+## Keyword arguments
+
+It is not possible to pass keyword arguments to `pytest.param`. This can make tests difficult to read if they have many params and many fields. Consider the following example:
 
 ```python
-import pytest 
+import pytest
+
 
 @pytest.mark.parametrize(
     "email, logged_in, is_superuser, is_staff, expected",
@@ -39,7 +41,7 @@ import pytest
             "someone@example.com",
             True,
             True,
-            True, # <-----------------------------------
+            True,  # <-----------------------------------
             False,
             id="Wrong email type",
         ),
@@ -56,14 +58,14 @@ def test_parametrize__vanilla(
 
 ```
 
-That `True` value the arrow is pointing at -- can you tell at a glance which field it is? Did you need to scroll back up to the fields definition at the top? 
-
+That `True` value the arrow is pointing at -- can you tell at a glance which field it is? Did you need to scroll back up to the fields definition at the top?
 
 Let's rewrite the same test using `pytest-better-parametrize`:
 
 ```python
-import pytest 
+import pytest
 from collections import namedtuple
+
 
 @pytest.mark.better_parametrize(
     param := namedtuple(
@@ -115,11 +117,11 @@ def test_parametrize__better(
     ...  
 ```
 
-Now it's immediately clear that the arrow is pointing at `is_staff`. Having access to keyword arguments makes tests easier to read, and easier to write (because it's harder to make a mistake). 
+Now it's immediately clear that the arrow is pointing at `is_staff`. Having access to keyword arguments makes tests easier to read, and easier to write (because it's harder to make a mistake).
 
 ## Better output formatting
 
-Pytest's default ids for multiple parameters can become a little hard to read. Consider the following test with 2 parameters: 
+Pytest's default ids for multiple parameters can become a little hard to read. Consider the following test with 2 parameters:
 
 ```python
 @pytest.mark.parametrize("full_moon", [True, False])
@@ -131,7 +133,7 @@ def test_stacking__vanilla(
     ...
 ```
 
-It produces the following output: 
+It produces the following output:
 
 ```
 ============================= test session starts ==============================
@@ -146,9 +148,9 @@ test_stacking__vanilla[False-False]
 
 ```
 
-The bare `True-False` display is not very helpful, especially as the number of parameters increases.  
+The bare `True-False` display is not very helpful, especially as the number of parameters increases.
 
-`pytest-better-parametrize` includes the parameter name in auto-generated ids, so the test output is more informative. 
+`pytest-better-parametrize` includes the parameter name in auto-generated ids, so the test output is more informative.
 
 ```python
 @pytest.mark.better_parametrize(
@@ -172,7 +174,7 @@ def test_stacking__better(
     ...
 ```
 
-This test generates the following output, where it is clear at a glance which parameter has which value.  
+This test generates the following output, where it is clear at a glance which parameter has which value.
 
 ```
 ============================= test session starts ==============================
@@ -185,4 +187,111 @@ test_stacking__better[weekend=False-full_moon=False] PASSED [100%]
 
 ============================== 4 passed in 0.05s ===============================
 
+```
+
+## Annotation fields
+
+Sometimes we may want to describe a specific test case and the motivation behind it. In pytest, we can place a long comment or make a long `id`:
+
+```python
+@pytest.mark.parametrize(
+    "foo, bar, baz",
+    [
+        # Really long comment describing this test case... lorem ipsum dolor
+        # sit amet, consectetur adipiscing elit, sed do eiusmodtempor
+        # incididunt ut labore et dolore magna aliqua.
+        pytest.param(
+            "foo",
+            69,
+            [1, 2, 3],
+            id="Short id for display purposes",
+        ),
+        pytest.param(
+            "qux",
+            420,
+            [],
+            id=(
+                "Really long id describing this test case... lorem ipsum "
+                "dolor sit amet, consectetur adipiscing elit, sed do "
+                "eiusmodtempor incididunt ut labore et dolore magna aliqua. "
+            ),
+        ),
+    ],
+)
+def test_long_descriptions__vanilla(
+    foo: str,
+    bar: int,
+    baz: list,
+):
+    assert isinstance(foo, str)
+    assert isinstance(bar, int)
+    assert isinstance(baz, list)
+
+```
+
+The comment is not part of the testcase, so it is not always clear to which testcase it refers. Also, linters can sometimes move comments around in unintuitive ways, which may break the association between the comment and the testcase.
+
+The long id results in unhelpful testcase display, because pytest uses the whole thing:
+
+```
+=========================== test session starts ============================
+collecting ... collected 2 items
+
+test_long_descriptions__vanilla[Short id for display purposes] PASSED [ 50%]
+test_long_descriptions__vanilla[Really long id describing this test case... lorem ipsum dolor sit amet, consectetur adipiscing elit...
+
+============================ 2 passed in 0.03s =============================
+```
+
+`pytest-better-parametrize` allows you to pass a list of fields to ignore -- these can then be used for additional annotations that you don't want to include in the test or the output:
+
+```python
+@pytest.mark.better_parametrize(
+    testcase := namedtuple("testcase", "foo, bar, baz, id, description"),
+    [
+        testcase(
+            foo="foo",
+            bar=69,
+            baz=[1, 2, 3],
+            id="Short id number 1",
+            description=(
+                "Really long description of this test case... lorem ipsum "
+                "dolor sit amet, consectetur adipiscing elit, sed do "
+                "eiusmodtempor incididunt ut labore et dolore magna aliqua. "
+            ),
+        ),
+        testcase(
+            foo="qux",
+            bar=420,
+            baz=[],
+            id="Short id number 2",
+            description=(
+                "Really long id describing this test case... lorem ipsum "
+                "dolor sit amet, consectetur adipiscing elit, sed do "
+                "eiusmodtempor incididunt ut labore et dolore magna aliqua. "
+            ),
+        ),
+    ],
+    ignore=["description"],
+)
+def test_long_descriptions__better(
+    foo: str,
+    bar: int,
+    baz: list,
+):
+    assert isinstance(foo, str)
+    assert isinstance(bar, int)
+    assert isinstance(baz, list)
+```
+
+The output of this test looks like this:
+
+```
+=========================== test session starts ============================
+collecting ... collected 2 items
+
+test_long_descriptions__better[Short id number 1] PASSED   [ 50%]
+test_long_descriptions__better[Short id number 2] PASSED   [100%]
+
+============================ 2 passed in 0.03s =============================
 ```
