@@ -26,11 +26,11 @@ def better_parametrize(
             ...
         ```
     """
-    fields, params, kwargs = prep_args(cls, testcases, ignore, **kwargs)
+    fields, params, kwargs = _prep_args(cls, testcases, ignore, **kwargs)
     return pytest.mark.parametrize(fields, params, **kwargs)
 
 
-def prep_args(
+def _prep_args(
     cls: t.Type[TestCase],
     testcases: t.Sequence[TestCase],
     ignore: t.Sequence[str] = (),

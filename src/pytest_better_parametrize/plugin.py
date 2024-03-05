@@ -1,4 +1,4 @@
-from .core import prep_args
+from .core import _prep_args
 
 
 def pytest_configure(config):
@@ -16,7 +16,7 @@ def pytest_generate_tests(metafunc):
 
     for marker in metafunc.definition.own_markers:
         if marker.name == "better_parametrize":
-            argnames, argvalues, kwargs = prep_args(
+            argnames, argvalues, kwargs = _prep_args(
                 *marker.args,
                 **marker.kwargs,
             )
