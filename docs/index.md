@@ -1,3 +1,3 @@
-# Welcome to pytest-better-parametrize
+# pytest-better-parametrize
 
 Better description of parametrized test cases.
