@@ -1,8 +1,33 @@
 import typing as t
+
 import pytest
-from _pytest.mark import ParameterSet
+from _pytest.mark import ParameterSet, MarkDecorator
 
 TestCase = t.NamedTuple
+Fields = tuple[str, ...]
+Params = list[ParameterSet]
+Kwargs = dict[str, t.Any]
+
+
+def better_parametrize(
+    cls: t.Type[TestCase],
+    testcases: t.Sequence[TestCase],
+    ignore: t.Sequence[str] = (),
+    **kwargs,
+) -> MarkDecorator:
+    """
+    This can be applied directly to a test function without the need for
+    pytest.mark:
+
+    Example:
+        ```
+        @better_parametrize(...)
+        def test_something(...):
+            ...
+        ```
+    """
+    fields, params, kwargs = prep_args(cls, testcases, ignore, **kwargs)
+    return pytest.mark.parametrize(fields, params, **kwargs)
 
 
 def prep_args(
@@ -10,9 +35,8 @@ def prep_args(
     testcases: t.Sequence[TestCase],
     ignore: t.Sequence[str] = (),
     **kwargs,
-) -> pytest.mark.parametrize:
+) -> tuple[Fields, Params, Kwargs]:
     """
-    Wraps pytest.mark.parametrize.
     Unpacks the params into pytest.params with positional arguments.
     """
 

@@ -2,6 +2,8 @@ from collections import namedtuple
 
 import pytest
 
+from src.pytest_better_parametrize.core import better_parametrize
+
 
 def _grant_access(
     email: str,
@@ -373,6 +375,56 @@ def test_long_descriptions__better(
     ignore=["description"],
 )
 def test_long_descriptions__no_id(
+    foo: str,
+    bar: int,
+    baz: list,
+):
+    """
+    This test is just to illustrate that if we don't pass `id`, the ignored
+    fields are not included in the id generation either.
+
+    The output of this test looks like this:
+
+    =========================== test session starts ============================
+    collecting ... collected 2 items
+
+    test_long_descriptions__no_id[foo='foo',bar=69,baz=[1, 2, 3]] PASSED [ 50%]
+    test_long_descriptions__no_id[foo='qux',bar=420,baz=[]] PASSED [100%]
+
+    ============================ 2 passed in 0.03s =============================
+    """
+    assert isinstance(foo, str)
+    assert isinstance(bar, int)
+    assert isinstance(baz, list)
+
+
+@better_parametrize(
+    testcase := namedtuple("testcase", "foo, bar, baz, description"),
+    [
+        testcase(
+            foo="foo",
+            bar=69,
+            baz=[1, 2, 3],
+            description=(
+                "Really long description of this test case... lorem ipsum "
+                "dolor sit amet, consectetur adipiscing elit, sed do "
+                "eiusmodtempor incididunt ut labore et dolore magna aliqua. "
+            ),
+        ),
+        testcase(
+            foo="qux",
+            bar=420,
+            baz=[],
+            description=(
+                "Really long id describing this test case... lorem ipsum "
+                "dolor sit amet, consectetur adipiscing elit, sed do "
+                "eiusmodtempor incididunt ut labore et dolore magna aliqua. "
+            ),
+        ),
+    ],
+    ignore=["description"]
+)
+def test_use_decorator_directly(
     foo: str,
     bar: int,
     baz: list,
