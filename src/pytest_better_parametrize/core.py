@@ -4,9 +4,9 @@ import pytest
 from _pytest.mark import ParameterSet, MarkDecorator
 
 TestCase = t.NamedTuple
-Fields = tuple[str, ...]
-Params = list[ParameterSet]
-Kwargs = dict[str, t.Any]
+Fields = t.Tuple[str, ...]
+Params = t.List[ParameterSet]
+Kwargs = t.Dict[str, t.Any]
 
 
 def better_parametrize(
