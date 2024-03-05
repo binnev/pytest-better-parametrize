@@ -1,4 +1,4 @@
-def test_stuff(pytester):
+def test_stdout_and_exit_code(pytester):
     pytester.makepyfile(
         """
         from collections import namedtuple

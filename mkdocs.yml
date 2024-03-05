@@ -8,3 +8,4 @@ repo_url: https://github.com/binnev/pytest-better-parametrize
 
 nav:
 - Home: index.md
+- features.md
