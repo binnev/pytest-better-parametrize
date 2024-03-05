@@ -2,16 +2,32 @@ from .core import _prep_args
 
 
 def pytest_configure(config):
-    # register an additional marker
+    """
+    This registers the `pytest-better-parametrize` marker with pytest. It is
+    the programmatic equivalent of writing
+
+        ```
+        markers =
+            better_parametrize
+        ```
+
+    in your pytest.ini file.
+    """
     config.addinivalue_line(
-        "markers", "better_parametrize(cls, values): takes some arguments"
+        "markers", "better_parametrize"
     )
 
 
-def pytest_generate_tests(metafunc):
+def pytest_generate_tests(metafunc) -> None:
     """
-    :param metafunc:
-    :return:
+    Pytest looks for functions with this name, and calls them during test
+    generation. This allows us to detect the `better_paramterize` marker,
+    convert its input into vanilla pytest.params, and pipe those into
+    pytest's own parametrize logic.
+
+    :param metafunc: a wrapper around the test function, which has access to
+        the markers that decorate it
+    :return: None
     """
 
     for marker in metafunc.definition.own_markers:
