@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Robin Neville" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Features - pytest-better-parametrize</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Features";
+        var mkdocs_page_input_path = "features.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> pytest-better-parametrize
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">Features</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#keyword-arguments">Keyword arguments</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#better-output-formatting">Better output formatting</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#annotation-fields">Annotation fields</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">pytest-better-parametrize</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Features</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/binnev/pytest-better-parametrize/edit/master/docs/features.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="features">Features</h1>
+<p><code>pytest.mark.parametrize</code> is great. It's one of my favourite pytest features. It allows us to easily DRY up test code. However, it does have a few limitations. We'll walk through those limitations (and the solutions offered by <code>pytest-better-parametrize</code>) here.</p>
+<h2 id="keyword-arguments">Keyword arguments</h2>
+<p>It is not possible to pass keyword arguments to <code>pytest.param</code>. This can make tests difficult to read if they have many params and many fields. Consider the following example:</p>
+<pre><code class="language-python">import pytest
+
+
+@pytest.mark.parametrize(
+    &quot;email, logged_in, is_superuser, is_staff, expected&quot;,
+    [
+        pytest.param(
+            &quot;someone@mycompany.com&quot;,
+            True,
+            False,
+            False,
+            False,
+            id=&quot;Logged in but not superuser or staff&quot;,
+        ),
+        pytest.param(
+            &quot;someone@mycompany.com&quot;,
+            True,
+            True,
+            False,
+            False,
+            id=&quot;Logged and superuser, but not staff&quot;,
+        ),
+        pytest.param(
+            &quot;someone@mycompany.com&quot;,
+            True,
+            True,
+            True,
+            True,
+            id=&quot;Logged and superuser and staff&quot;,
+        ),
+        pytest.param(
+            &quot;someone@example.com&quot;,
+            True,
+            True,
+            True,  # &lt;-----------------------------------
+            False,
+            id=&quot;Wrong email type&quot;,
+        ),
+    ],
+)
+def test_parametrize__vanilla(
+    email: str,
+    logged_in: bool,
+    is_superuser: bool,
+    is_staff: bool,
+    expected: bool,
+):
+    ...  # test body goes here
+
+</code></pre>
+<p>That <code>True</code> value the arrow is pointing at -- can you tell at a glance which field it is? Did you need to scroll back up to the fields definition at the top?</p>
+<p>Let's rewrite the same test using <code>pytest-better-parametrize</code>:</p>
+<pre><code class="language-python">import pytest
+from collections import namedtuple
+
+
+@pytest.mark.better_parametrize(
+    param := namedtuple(
+        &quot;param&quot;,
+        &quot;email, logged_in, is_superuser, is_staff, expected, id&quot;,
+    ),
+    [
+        param(
+            id=&quot;Logged in but not superuser or staff&quot;,
+            email=&quot;someone@mycompany.com&quot;,
+            logged_in=True,
+            is_superuser=False,
+            is_staff=False,
+            expected=False,
+        ),
+        param(
+            id=&quot;Logged and superuser, but not staff&quot;,
+            email=&quot;someone@mycompany.com&quot;,
+            logged_in=True,
+            is_superuser=True,
+            is_staff=False,
+            expected=False,
+        ),
+        param(
+            id=&quot;Logged and superuser and staff&quot;,
+            email=&quot;someone@mycompany.com&quot;,
+            logged_in=True,
+            is_superuser=True,
+            is_staff=True,
+            expected=True,
+        ),
+        param(
+            id=&quot;Wrong email type&quot;,
+            email=&quot;someone@example.com&quot;,
+            logged_in=True,
+            is_superuser=True,
+            is_staff=True,  # &lt;-----------------------------------
+            expected=False,
+        ),
+    ],
+)
+def test_parametrize__better(
+    email: str,
+    logged_in: bool,
+    is_superuser: bool,
+    is_staff: bool,
+    expected: bool,
+):
+    ...  
+</code></pre>
+<p>Now it's immediately clear that the arrow is pointing at <code>is_staff</code>. Having access to keyword arguments makes tests easier to read, and easier to write (because it's harder to make a mistake).</p>
+<h2 id="better-output-formatting">Better output formatting</h2>
+<p>Pytest's default ids for multiple parameters can become a little hard to read. Consider the following test with 2 parameters:</p>
+<pre><code class="language-python">@pytest.mark.parametrize(&quot;full_moon&quot;, [True, False])
+@pytest.mark.parametrize(&quot;weekend&quot;, [True, False])
+def test_stacking__vanilla(
+    weekend: int,
+    full_moon: bool,
+):
+    ...
+</code></pre>
+<p>It produces the following output:</p>
+<pre><code>============================= test session starts ==============================
+collecting ... collected 4 items
+
+test_stacking__vanilla[True-True] 
+test_stacking__vanilla[True-False] 
+test_stacking__vanilla[False-True] 
+test_stacking__vanilla[False-False] 
+
+============================== 4 passed in 0.03s ===============================
+
+</code></pre>
+<p>The bare <code>True-False</code> display is not very helpful, especially as the number of parameters increases.</p>
+<p><code>pytest-better-parametrize</code> includes the parameter name in auto-generated ids, so the test output is more informative.</p>
+<pre><code class="language-python">@pytest.mark.better_parametrize(
+    full_moon := namedtuple(&quot;param&quot;, &quot;full_moon&quot;),
+    [
+        full_moon(True),
+        full_moon(False),
+    ],
+)
+@pytest.mark.better_parametrize(
+    weekend := namedtuple(&quot;param&quot;, &quot;weekend&quot;),
+    [
+        weekend(True),
+        weekend(False),
+    ],
+)
+def test_stacking__better(
+    weekend: int,
+    full_moon: bool,
+):
+    ...
+</code></pre>
+<p>This test generates the following output, where it is clear at a glance which parameter has which value.</p>
+<pre><code>============================= test session starts ==============================
+collecting ... collected 4 items
+
+test_stacking__better[weekend=True-full_moon=True] PASSED  [ 25%]
+test_stacking__better[weekend=True-full_moon=False] PASSED [ 50%]
+test_stacking__better[weekend=False-full_moon=True] PASSED [ 75%]
+test_stacking__better[weekend=False-full_moon=False] PASSED [100%]
+
+============================== 4 passed in 0.05s ===============================
+
+</code></pre>
+<h2 id="annotation-fields">Annotation fields</h2>
+<p>Sometimes we may want to describe a specific test case and the motivation behind it. In pytest, we can place a long comment or make a long <code>id</code>:</p>
+<pre><code class="language-python">@pytest.mark.parametrize(
+    &quot;foo, bar, baz&quot;,
+    [
+        # Really long comment describing this test case... lorem ipsum dolor
+        # sit amet, consectetur adipiscing elit, sed do eiusmodtempor
+        # incididunt ut labore et dolore magna aliqua.
+        pytest.param(
+            &quot;foo&quot;,
+            69,
+            [1, 2, 3],
+            id=&quot;Short id for display purposes&quot;,
+        ),
+        pytest.param(
+            &quot;qux&quot;,
+            420,
+            [],
+            id=(
+                &quot;Really long id describing this test case... lorem ipsum &quot;
+                &quot;dolor sit amet, consectetur adipiscing elit, sed do &quot;
+                &quot;eiusmodtempor incididunt ut labore et dolore magna aliqua. &quot;
+            ),
+        ),
+    ],
+)
+def test_long_descriptions__vanilla(
+    foo: str,
+    bar: int,
+    baz: list,
+):
+    assert isinstance(foo, str)
+    assert isinstance(bar, int)
+    assert isinstance(baz, list)
+
+</code></pre>
+<p>The comment is not part of the testcase, so it is not always clear to which testcase it refers. Also, linters can sometimes move comments around in unintuitive ways, which may break the association between the comment and the testcase.</p>
+<p>The long id results in unhelpful testcase display, because pytest uses the whole thing:</p>
+<pre><code>=========================== test session starts ============================
+collecting ... collected 2 items
+
+test_long_descriptions__vanilla[Short id for display purposes] PASSED [ 50%]
+test_long_descriptions__vanilla[Really long id describing this test case... lorem ipsum dolor sit amet, consectetur adipiscing elit...
+
+============================ 2 passed in 0.03s =============================
+</code></pre>
+<p><code>pytest-better-parametrize</code> allows you to pass a list of fields to ignore -- these can then be used for additional annotations that you don't want to include in the test or the output:</p>
+<pre><code class="language-python">@pytest.mark.better_parametrize(
+    testcase := namedtuple(&quot;testcase&quot;, &quot;foo, bar, baz, id, description&quot;),
+    [
+        testcase(
+            foo=&quot;foo&quot;,
+            bar=69,
+            baz=[1, 2, 3],
+            id=&quot;Short id number 1&quot;,
+            description=(
+                &quot;Really long description of this test case... lorem ipsum &quot;
+                &quot;dolor sit amet, consectetur adipiscing elit, sed do &quot;
+                &quot;eiusmodtempor incididunt ut labore et dolore magna aliqua. &quot;
+            ),
+        ),
+        testcase(
+            foo=&quot;qux&quot;,
+            bar=420,
+            baz=[],
+            id=&quot;Short id number 2&quot;,
+            description=(
+                &quot;Really long id describing this test case... lorem ipsum &quot;
+                &quot;dolor sit amet, consectetur adipiscing elit, sed do &quot;
+                &quot;eiusmodtempor incididunt ut labore et dolore magna aliqua. &quot;
+            ),
+        ),
+    ],
+    ignore=[&quot;description&quot;],
+)
+def test_long_descriptions__better(
+    foo: str,
+    bar: int,
+    baz: list,
+):
+    assert isinstance(foo, str)
+    assert isinstance(bar, int)
+    assert isinstance(baz, list)
+</code></pre>
+<p>The output of this test looks like this:</p>
+<pre><code>=========================== test session starts ============================
+collecting ... collected 2 items
+
+test_long_descriptions__better[Short id number 1] PASSED   [ 50%]
+test_long_descriptions__better[Short id number 2] PASSED   [100%]
+
+============================ 2 passed in 0.03s =============================
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/binnev/pytest-better-parametrize" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
